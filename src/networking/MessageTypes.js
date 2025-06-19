@@ -1,0 +1,22 @@
+module.exports = {
+    // Room related
+    CREATE_ROOM: 'CREATE_ROOM',
+    JOIN_ROOM: 'JOIN_ROOM',
+    LEAVE_ROOM: 'LEAVE_ROOM',
+    ROOM_CREATED: 'ROOM_CREATED',
+    ROOM_JOINED: 'ROOM_JOINED',
+    ROOM_LEFT: 'ROOM_LEFT',
+    ROOM_FULL: 'ROOM_FULL',
+    ROOM_NOT_FOUND: 'ROOM_NOT_FOUND',
+    
+    // Game related
+    PLAYER_INPUT: 'PLAYER_INPUT',
+    GAME_STATE: 'GAME_STATE',
+    PLAYER_CONNECTED: 'PLAYER_CONNECTED',
+    PLAYER_DISCONNECTED: 'PLAYER_DISCONNECTED',
+    
+    // System messages
+    ERROR: 'ERROR',
+    PING: 'PING',
+    PONG: 'PONG'
+};

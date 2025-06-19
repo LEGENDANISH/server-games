@@ -1,0 +1,13 @@
+{
+    "port": 2567,
+    "colyseus": {
+        "monitor": {
+            "auth": {
+                "username": "admin",
+                "password": "admin"
+            }
+        }
+    },
+    "jwtSecret": "development-secret",
+    "logLevel": "debug"
+}
