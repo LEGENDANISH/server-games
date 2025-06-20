@@ -71,8 +71,7 @@ class SmallRoom {
         roomCode: this.roomCode,
         playerId,
         spawnPosition: player.position,
-        players: Array.from(this.gameState.players.values())
-      }
+players: Array.from(this.gameState.players.values()).filter(p => p.connected)      }
     }));
 
     // Broadcast to other players that someone joined
@@ -89,28 +88,24 @@ class SmallRoom {
     logger.info(`Player ${playerId} (${playerName}) joined room ${this.roomCode}`);
     return true;
   }
+removeClient(playerId) {
+  this.clients.delete(playerId);
+  this.playersReady.delete(playerId);
 
-  removeClient(playerId) {
-    this.clients.delete(playerId);
-    this.playersReady.delete(playerId);
+  // Actually remove the player from game state
+  this.gameState.removePlayer(playerId);
 
-    // Update player as disconnected instead of removing
-    const player = this.gameState.getPlayer(playerId);
-    if (player) {
-      player.connected = false;
-    }
+  this.broadcast({
+    type: 'PLAYER_LEFT',
+    data: { playerId }
+  });
 
-    this.broadcast({
-      type: 'PLAYER_LEFT',
-      data: { playerId }
-    });
+  logger.info(`Player ${playerId} left room ${this.roomCode}`);
 
-    logger.info(`Player ${playerId} left room ${this.roomCode}`);
-
-    if (this.clients.size === 0) {
-      this.closeRoom('All players left.');
-    }
+  if (this.clients.size === 0) {
+    this.closeRoom('All players left.');
   }
+}
 
   setPlayerReady(playerId, isReady) {
     const player = this.gameState.getPlayer(playerId);
@@ -177,7 +172,9 @@ class SmallRoom {
       case 'SHOOT':
         this.handlePlayerShooting(player, action.data);
         break;
-
+case 'HEALTH_UPDATE':
+  this.handlePlayerHealthUpdate(player, action.data);
+  break;
       default:
         logger.warn(`Unhandled action type: ${action.type} from player ${playerId}`);
     }
@@ -255,6 +252,15 @@ class SmallRoom {
     });
   }
 
+  handlePlayerHealthUpdate(player, data) {
+  if (data.health !== undefined) {
+    player.health = Math.max(0, Math.min(player.maxHealth, data.health));
+    this.broadcast({
+      type: 'HEALTH_UPDATE', 
+      data: { playerId: player.id, health: player.health }
+    }, player.id);
+  }
+}
   update() {
     if (this.status !== 'playing') return;
 

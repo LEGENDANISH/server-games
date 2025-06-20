@@ -151,7 +151,101 @@ class GameState {
     this.lastUpdate = Date.now();
     return result;
   }
+  broadcastHealthUpdate(playerId, newHealth) {
+  const player = this.players.get(playerId);
+  if (!player) return;
+  const clampedHealth = Math.max(0, Math.min(newHealth, player.maxHealth));
 
+  const updateMessage = {
+    type: 'HEALTH_UPDATE',
+    data: {
+      playerId,
+      health: newHealth
+    }
+  };
+
+  // You'll need to pass this broadcast function from your room class
+  if (this.onBroadcast) {
+    this.onBroadcast(updateMessage);
+  }
+}
+handlePlayerDeath(attacker, victim) {
+  // Increment stats
+  attacker.kills += 1;
+  victim.deaths += 1;
+
+  // Reset health and respawn later
+  victim.health = 0;
+
+  // Broadcast death
+  const deathMessage = {
+    type: 'PLAYER_DIED',
+    data: {
+      killerId: attacker.id,
+      victimId: victim.id,
+      kills: attacker.kills,
+      deaths: victim.deaths
+    }
+  };
+
+  if (this.onBroadcast) {
+    this.onBroadcast(deathMessage);
+  }
+
+  // Respawn after delay
+  setTimeout(() => {
+    this.respawnPlayer(victim);
+  }, 5000); // 5 seconds
+}
+respawnPlayer(player) {
+  player.health = player.maxHealth;
+  player.position = {
+    x: Math.floor(Math.random() * 300) + 100,
+    y: Math.floor(Math.random() * 200) + 300
+  };
+
+  const respawnMessage = {
+    type: 'PLAYER_RESPAWNED',
+    data: {
+      playerId: player.id,
+      position: player.position,
+      health: player.health
+    }
+  };
+
+  if (this.onBroadcast) {
+    this.onBroadcast(respawnMessage);
+  }
+
+  logger.info(`Player ${player.id} respawned`);
+}
+handleDamage(attackerId, victimId, damage) {
+  const attacker = this.players.get(attackerId);
+  const victim = this.players.get(victimId);
+
+  if (!attacker || !victim) {
+    logger.warn(`Invalid damage event: ${attackerId} -> ${victimId}`);
+    return false;
+  }
+
+  // Apply damage
+  const oldHealth = victim.health;
+  victim.health = Math.max(0, victim.health - damage);
+
+  logger.info(`Player ${victimId} took ${damage} damage from ${attackerId}. Remaining HP: ${victim.health}`);
+
+  // Broadcast health update
+  if (victim.health < oldHealth) {
+    this.broadcastHealthUpdate(victim.id, victim.health);
+  }
+
+  // Check death
+  if (victim.health <= 0) {
+    this.handlePlayerDeath(attacker, victim);
+  }
+
+  return true;
+}
   update(deltaTime) {
     // Update bullets positions
     this.bullets.forEach((bullet, id) => {
